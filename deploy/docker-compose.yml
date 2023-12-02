@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  api:
+    ports:
+      # Exposes application port.
+    - "8000:8000"
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile
+      target: prod
+    image: finn_shorturl:${FINN_SHORTURL_VERSION:-latest}
+    restart: always
+    env_file:
+    - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      FINN_SHORTURL_HOST: 0.0.0.0
+      FINN_SHORTURL_REDIS_HOST: finn_shorturl-redis
+
+  redis:
+    image: bitnami/redis:6.2.5
+    hostname: "finn_shorturl-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
