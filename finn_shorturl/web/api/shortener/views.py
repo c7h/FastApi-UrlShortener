@@ -10,12 +10,20 @@ router = APIRouter()
 
 
 @router.get("/{shorturl_id}", include_in_schema=False)
-async def forward(shorturl_id: str):
+async def forward(
+    shorturl_id: str,
+    redis_pool: ConnectionPool = Depends(get_redis_pool),
+):
     """
     This is the resource itself. For convenience reasons, this is used to
     forward from the shortened URL to the target URL
     """
-    url = "https://gerneth.info/"  # fixme
+    async with Redis(connection_pool=redis_pool) as redis:
+        db_result = await redis.get(shorturl_id)
+    if not db_result:
+        raise HTTPException(status_code=404, detail="URL not found")
+    url = db_result.decode()
+
     return responses.RedirectResponse(url)
 
 
@@ -32,7 +40,7 @@ async def decode_url(
         db_result = await redis.get(shorturl_id)
     # throw 404 if not found in DB
     if not db_result:
-        raise HTTPException(status_code=404, detail="Item not found")
+        raise HTTPException(status_code=404, detail="URL not found")
     url = db_result.decode()
 
     shorturl = str(req.base_url).rstrip("/") + router.url_path_for(
