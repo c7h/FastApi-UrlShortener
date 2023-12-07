@@ -1,12 +1,31 @@
+import random
 from typing import Annotated
-from fastapi import APIRouter, responses, Request, Path, HTTPException, Depends
-from .schemas import ShortUrlOutput, ShortURLInput
+
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, responses
+from redis.asyncio import ConnectionPool, Redis
+
 from finn_shorturl.services.redis.dependency import get_redis_pool
 from finn_shorturl.settings import settings
-from redis.asyncio import ConnectionPool, Redis
-import random
+
+from .schemas import ShortURLInput, ShortUrlOutput
 
 router = APIRouter()
+
+
+async def lookup_url(shorturl_id, redis_pool):
+    async with Redis(connection_pool=redis_pool) as redis:
+        db_result = await redis.get(shorturl_id)
+    if not db_result:
+        raise HTTPException(status_code=404, detail="URL not found")
+    url = db_result.decode()
+    return url
+
+
+def get_absolute_shorturl(shorturl_id: str, req: Request):
+    base = str(req.base_url)
+    lookup_endpoint = router.url_path_for("forward", shorturl_id=shorturl_id)
+    shorturl = f"{base.rstrip('/')}/api{lookup_endpoint}"
+    return shorturl
 
 
 @router.get("/{shorturl_id}", include_in_schema=False)
@@ -18,11 +37,7 @@ async def forward(
     This is the resource itself. For convenience reasons, this is used to
     forward from the shortened URL to the target URL
     """
-    async with Redis(connection_pool=redis_pool) as redis:
-        db_result = await redis.get(shorturl_id)
-    if not db_result:
-        raise HTTPException(status_code=404, detail="URL not found")
-    url = db_result.decode()
+    url = await lookup_url(shorturl_id, redis_pool)
 
     return responses.RedirectResponse(url)
 
@@ -36,16 +51,9 @@ async def decode_url(
     redis_pool: ConnectionPool = Depends(get_redis_pool),
 ):
     # Lookup shorturl_id in DB
-    async with Redis(connection_pool=redis_pool) as redis:
-        db_result = await redis.get(shorturl_id)
-    # throw 404 if not found in DB
-    if not db_result:
-        raise HTTPException(status_code=404, detail="URL not found")
-    url = db_result.decode()
+    url = await lookup_url(shorturl_id, redis_pool)
 
-    shorturl = str(req.base_url).rstrip("/") + router.url_path_for(
-        "forward", shorturl_id=shorturl_id
-    )
+    shorturl = get_absolute_shorturl(shorturl_id, req)
     return ShortUrlOutput(url=url, short=shorturl)
 
 
@@ -75,7 +83,6 @@ async def encode_url(
                 # ID was unique. no reason to try again...
                 break
 
-    shorturl = str(req.base_url).rstrip("/") + router.url_path_for(
-        "forward", shorturl_id=shorturl_id
-    )
+    shorturl = get_absolute_shorturl(shorturl_id, req)
+
     return ShortUrlOutput(url=item.url, short=shorturl)
