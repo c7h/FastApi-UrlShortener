@@ -5,6 +5,7 @@ from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from yarl import URL
+import string
 
 TEMP_DIR = Path(gettempdir())
 
@@ -77,7 +78,7 @@ class Settings(BaseSettings):
     )
 
     # Specific settings
-    shorturl_regex = "^[A-Za-z0-9-_]{8}$"
+    shorturl_characters: str = string.ascii_letters + string.digits 
 
 
 settings = Settings()
