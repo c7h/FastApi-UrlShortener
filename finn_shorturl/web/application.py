@@ -32,3 +32,5 @@ def get_app() -> FastAPI:
     app.include_router(router=api_router, prefix="/api")
 
     return app
+
+app = get_app()
