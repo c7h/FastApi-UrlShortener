@@ -1,9 +1,10 @@
-from pydantic import AnyHttpUrl, BaseModel, constr
-from finn_shorturl.settings import shorturl_regex
+from pydantic import AnyHttpUrl, BaseModel
+
 
 class ShortURLInput(BaseModel):
-    longurl: AnyHttpUrl
+    url: AnyHttpUrl
 
 
 class ShortUrlOutput(BaseModel):
-    shorturl: constr(regex=shorturl_regex, to_lower=True, strip_whitespace=True)
+    url: AnyHttpUrl
+    short: AnyHttpUrl
