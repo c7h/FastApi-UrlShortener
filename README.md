@@ -1,38 +1,126 @@
-### Objective
+# finn_shorturl
 
-Your assignment is to implement a URL shortening service using Python and any framework.
+ShortLink is a URL shortening service where you enter a URL such as https://codesubmit.io/library/react and it returns a short URL such as http://short.est/GeAi9KZZ. The api consists of 2 endpoints:
 
-### Brief
-
-ShortLink is a URL shortening service where you enter a URL such as https://codesubmit.io/library/react and it returns a short URL such as http://short.est/GeAi9K.
-
-### Tasks
-
--   Implement assignment using:
-    -   Language: **Python**
-    -   Framework: **any framework**
-    -   Two endpoints are required
-        -   /encode - Encodes a URL to a shortened URL
-        -   /decode - Decodes a shortened URL to its original URL.
-    -   Both endpoints should return JSON
--   There is no restriction on how your encode/decode algorithm should work. You just need to make sure that a URL can be encoded to a short URL and the short URL can be decoded to the original URL. **You do not need to persist short URLs to a database. Keep them in memory.**
--   Provide detailed instructions on how to run your assignment in a separate markdown file
--   Provide API tests for both endpoints
-
-### Evaluation Criteria
-
--   **Python** best practices
--   API implemented featuring a /encode and /decode endpoint
--   Show us your work through your commit history
--   Completeness: did you complete the features? Are all the tests running?
--   Correctness: does the functionality act in sensible, thought-out ways?
--   Maintainability: is it written in a clean, maintainable way?
+- `POST /api/encode`  
+-> ```{"url": "http://gerneth.info"}```  
+<- ```{"url": "http://gerneth.info"  
+       "short": "http://localhost/api/Abc123XY"
+}```
 
 
-### CodeSubmit
+- `GET /api/decode/Abc123XY`  
+<- ```{"url": "http://gerneth.info"  
+       "short": "http://localhost/api/Abc123XY"
+}```
 
-Please organize, design, test and document your code as if it were going into production - then push your changes to the master branch. After you have pushed your code, you may submit the assignment on the assignment page.
+The third route is the ressouce itself (`http://localhost/api/Abc123XY`). If the short url ressource is called and the url could be resolved in redis, a `307` redirect will be initiated.
 
-All the best and happy coding,
+- `GET http://localhost/api/Abc123XY`
+-> `TEMPORARY REDIRECT http://gerneth.info/`
 
-The FINN GmbH Team
+
+## Poetry
+
+This project uses poetry. It's a modern dependency management
+tool.
+
+To run the project use this set of commands:
+
+```bash
+poetry install
+poetry run python -m finn_shorturl
+```
+
+This will start the server on the configured host.
+
+You can find OpenAPI documentation at http://localhost:8000/api/docs.
+
+You can read more about poetry here: https://python-poetry.org/
+
+## Docker
+
+You can start the project with docker using this command:
+
+```bash
+docker-compose -f deploy/docker-compose.yml --project-directory . up --build
+```
+
+But you have to rebuild image every time you modify `poetry.lock` or `pyproject.toml` with this command:
+
+```bash
+docker-compose -f deploy/docker-compose.yml --project-directory . build
+```
+
+## Configuration
+
+This application can be configured with environment variables.
+
+**You can create `.env` file in the root directory and place all
+environment variables here.**
+
+All environment variables should start with "FINN_SHORTURL_" prefix.
+
+For example if you see in your "finn_shorturl/settings.py" a variable named like
+`random_parameter`, you should provide the "FINN_SHORTURL_RANDOM_PARAMETER"
+variable to configure the value. This behaviour can be changed by overriding `env_prefix` property
+in `finn_shorturl.settings.Settings.Config`.
+
+An example of .env file:
+```bash
+FINN_SHORTURL_RELOAD="True"
+FINN_SHORTURL_PORT="8000"
+FINN_SHORTURL_ENVIRONMENT="dev"
+FINN_SHORTURL_REDIS_HOST="localhost"
+```
+
+You can read more about BaseSettings class here: https://pydantic-docs.helpmanual.io/usage/settings/
+## OpenTelemetry
+
+If you want to start your project with OpenTelemetry collector
+you can add `-f ./deploy/docker-compose.otlp.yml` to your docker command.
+
+Like this:
+
+```bash
+docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.otlp.yml --project-directory . up
+```
+
+This command will start OpenTelemetry collector and jaeger.
+After sending a requests you can see traces in jaeger's UI
+at http://localhost:16686/.
+
+This docker configuration is not supposed to be used in production.
+It's only for demo purpose.
+
+You can read more about OpenTelemetry here: https://opentelemetry.io/
+
+## Pre-commit
+
+Pre-commit hooks are optional, but can make developing a lot easier! You don't need to do this if you are not planning to commit anything.
+To install pre-commit simply run inside the shell:
+```bash
+pre-commit install
+```
+
+pre-commit is very useful to check your code before publishing it.
+It's configured using .pre-commit-config.yaml file.
+
+By default it runs:
+* black (formats your code);
+* mypy (validates types);
+* isort (sorts imports in all files);
+* flake8 (spots possible bugs);
+
+
+You can read more about pre-commit here: https://pre-commit.com/
+
+
+## Running tests
+
+For running tests on your local machine, first make sure you have created the `.env` file in the project root. In order to run the url shortener locally, you need to add the redis host url env vars `FINN_SHORTURL_REDIS_HOST=localhost` to a valid redis instance.
+
+2. Run the pytest.
+```bash
+pytest -vv .
+```
