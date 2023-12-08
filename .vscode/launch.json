@@ -9,7 +9,12 @@
       "type": "python",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["web.application:app", "--reload"],
+      "args": [
+        "web.application:app",
+        "--reload",
+        "--reload-exclude",
+        "*/tests/*"
+      ],
       "jinja": true,
       "justMyCode": true
     }
