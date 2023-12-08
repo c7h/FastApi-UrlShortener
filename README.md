@@ -36,6 +36,9 @@ This will start the server on the configured host.
 
 You can find OpenAPI documentation at http://localhost:8000/api/docs.
 
+Also, If you are looking for redoc, take a look here: 
+http://127.0.0.1:8000/api/redoc.
+
 You can read more about poetry here: https://python-poetry.org/
 
 ## Docker
